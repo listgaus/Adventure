@@ -2,9 +2,12 @@ var Adventures = {};
 //currentAdventure is used for the adventure we're currently on (id). This should be determined at the beginning of the program
 Adventures.currentAdventure = 0; //todo keep track from db
 //currentStep is used for the step we're currently on (id). This should be determined at every crossroad, depending on what the user chose
-Adventures.currentStep = 0;//todo keep track from db
+Adventures.optionChosen = 0;//todo keep track from db
 Adventures.currentUser = 0;//todo keep track from db
-
+Adventures.life = 0;
+Adventures.coins = 0;
+Adventures.lastStage = 0;
+Adventures.nextStage = 0;
 
 //TODO: remove for production
 Adventures.debugMode = true;
@@ -26,18 +29,24 @@ Adventures.bindErrorHandlers = function () {
 };
 
 
-//The core function of the app, sends the user's choice and then parses the results to the server and handling the response
+//The core function of the app, sends the user's choice and
+// then parses the results to the server and handling the response
 Adventures.chooseOption = function(){
-    Adventures.currentStep = $(this).val();
+    Adventures.optionChosen = $(this).val(); //Jquerys the value of the option chosen
     $.ajax("/story",{
         type: "POST",
         data: {"user": Adventures.currentUser,
             "adventure": Adventures.currentAdventure,
-            "next": Adventures.currentStep},
+            "option_chosen": Adventures.optionChosen, //THE OPTION CHOSEN
+            "coins": Adventures.coins,
+            "life": Adventures.life,
+            "last_stage": Adventures.lastStage, // THE LAST STAGE OF THE GAME
+            "next_stage": Adventures.nextStage // NEXT STAGE
+        },
         dataType: "json",
         contentType: "application/json",
         success: function (data) {
-            console.log(data);
+            console.log('this is the data: ',data);
             $(".greeting-text").hide();
             Adventures.write(data);
         }
@@ -46,6 +55,15 @@ Adventures.chooseOption = function(){
 
 Adventures.write = function (message) {
     //Writing new choices and image to screen
+    console.log("this is the info: " + message);
+    Adventures.currentUser = message["user"];
+    Adventures.currentAdventure = message["adventure"];
+    Adventures.nextStage = message["next_stage"];
+    Adventures.life = message["life"];
+    Adventures.coins = message["coins"];
+    Adventures.lastStage = message["last_stage"];
+    $(".user-info").text('So '+ message["name"]+'! you have: ').show();
+    $(".progress-info").text('Life: '+ message["life"]+' Coins: '+message["coins"]).show();
     $(".situation-text").text(message["text"]).show();
     for(var i=0;i<message['options'].length;i++){
         var opt = $("#option_" + (i+1));
@@ -62,6 +80,7 @@ Adventures.start = function(){
         $("#nameField").keyup(Adventures.checkName);
         $(".adventure-button").click(Adventures.initAdventure);
         $(".adventure").hide();
+        $(".progress-info").hide();
         $(".welcome-screen").show();
     });
 };
